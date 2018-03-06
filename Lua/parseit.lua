@@ -167,7 +167,7 @@ function parse_statement()
 	savelex = lexstr
     if matchString("input") then
 		savelex=lexstr
-        good, ast1 = parse_lvalue(savelex)
+        good, ast1 = parse_lvalue()
         if not good then
             return false, nil
         end
@@ -214,24 +214,46 @@ function parse_statement()
 
 
 	elseif matchString("if") then
-		good, ast1 = parse_expr()
+		local newast
+		ast1 = {IF_STMT}
+		good, ast2 = parse_expr()
 		if not good then
 			return false, nil
 		end
+		table.insert(ast1, ast2)
 		good, ast2 = parse_stmt_list()
 		if not good then
 			return false, nil
 		end
+		table.insert(ast1, ast2)
 		while true do
 			if matchString("end") then
 				break
+			elseif matchString("else") then
+				good,ast2 = parse_stmt_list()
+				if not good then
+					return false, nil
+				end
+				table.insert(ast1, ast2)
+				if matchString("end") then
+					break
+				end
+			elseif matchString("elseif") then
+				good, ast2 = parse_expr()
+				if not good then
+					return false, nil
+				end
+				table.insert(ast1,ast2)
+				good, ast2 = parse_stmt_list()
+				if not good then
+					return false, nil
+				end
+				table.insert(ast1, ast2)
+			else
+				return false, nil
 			end
-			if matchString("elseif") then
-
-			end
-			good, ast1 = parse_stmt_list()
 		end
-		return true, {IF_STMT, ast1, ast2}
+		return true, ast1
 
 	elseif matchString("while") then
 		good, ast1 = parse_expr()
@@ -248,8 +270,7 @@ function parse_statement()
 		return true, {WHILE_STMT, ast1, ast2}
 
 	else
-		advance()
-		good, ast1 = parse_lvalue(savelex)
+		good, ast1 = parse_lvalue()
 		if not good then
 			return false, nil
 		end
@@ -259,11 +280,7 @@ function parse_statement()
 				return false, nil
 			end
 			return true, {ASSN_STMT, ast1, ast2}
-		else
-			return false, nil
 		end
-		return true, ast1
-
 	end
 end
 
@@ -278,9 +295,7 @@ function parse_print_arg()												--finished, probably needs work for passin
 	elseif matchCat(lexit.STRLIT) then
 		ast1 = {STRLIT_OUT, savelex}
 		return true, ast1
-	elseif lexstr == ";" then
-		return false, nil
-	elseif matchCat(lexit.OP) then
+	else
 		return parse_expr()
 	end
 end
@@ -321,7 +336,10 @@ function parse_comp_expr()
 		end
 		return true, {{UN_OP, "!"}, ast}
 	else
-	good, newast = parse_arith_expr()
+	good, ast = parse_arith_expr()
+	if not good then
+		return false, nil
+	end
 		while true do
 			saveop = lexstr
 
@@ -337,7 +355,7 @@ function parse_comp_expr()
 			ast ={ { BIN_OP, saveop }, ast, newast}
 		end
 	end
-	return true, newast
+	return true, ast
 end
 
 
@@ -413,19 +431,25 @@ function parse_factor()
 		end
 		return true, {{ UN_OP, savelex }, ast}
 	elseif matchString("call") then
-		return true, {CALL_FUNC, savelex}
+		savelex=lexstr
+		if matchCat(lexit.ID) then
+			return true, {CALL_FUNC, savelex}
+		end
 	elseif matchCat(lexit.NUMLIT) then
 		return true, { NUMLIT_VAL, savelex }
-	elseif matchString("true") or matchString("false") then
-		return {BOOLLIT_VAL, savelex}
-	elseif matchCat(lexit.ID) then
-		good, ast = parse_lvalue(savelex)
+	elseif matchString("true") then
+		return true, {BOOLLIT_VAL, "true"}
+	elseif matchString("false") then
+		return true, {BOOLLIT_VAL, "false"}
+	elseif lexcat == lexit.ID then
+		good, ast = parse_lvalue()
 		if not good then
 			return false, nil
 		end
-		return true, parse_lvalue(savelex)
+		return true, ast
+	else
+		return false, nil
 	end
-	return false, nil
 end
 
 
@@ -433,8 +457,9 @@ end
 --parsing function for the nonterminal "lvalue"
 --takes an argument of the previous lexstr which
 --is the name of the VAR
-function parse_lvalue(lvalue)
-	local good, ast
+function parse_lvalue()
+	local good, ast, savelex
+	savelex = lexstr
 	if matchCat(lexit.ID) then
 		if matchString("[") then
 			good, ast = parse_expr()
@@ -444,9 +469,9 @@ function parse_lvalue(lvalue)
 			if not matchString("]") then
 				return false, nil
 			end
-			return true, {ARRAY_VAR, lvalue, ast}
+			return true, {ARRAY_VAR, savelex, ast}
 		end
-		return true, {SIMPLE_VAR,lvalue}
+		return true, {SIMPLE_VAR, savelex}
 	end
 end
 

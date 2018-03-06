@@ -414,16 +414,16 @@ function test_input_stmt(t)
     checkParse(t, "input x", true, true,
       {STMTxLIST,{INPUTxSTMT,{SIMPLExVAR,"x"}}},
       "Input statement: simple")
-    --checkParse(t, "input x[1]", true, true,											--commented out some tests here
-     -- {STMTxLIST,{INPUTxSTMT,{ARRAYxVAR,"x",
-      --  {NUMLITxVAL,"1"}}}},
-     -- "Input statement: array ref")
-    --checkParse(t, "input x[(a==b[c[d]])+e[3e7%5]]", true, true,
-    --  {STMTxLIST,{INPUTxSTMT,{ARRAYxVAR,"x",{{BINxOP,"+"},
-    --    {{BINxOP,"=="},{SIMPLExVAR,"a"},{ARRAYxVAR,"b",{ARRAYxVAR,
-    --    "c",{SIMPLExVAR,"d"}}}},{ARRAYxVAR,"e",
-    --    {{BINxOP,"%"},{NUMLITxVAL,"3e7"},{NUMLITxVAL,"5"}}}}}}},
-    --  "Input statement, complex array ref")
+    checkParse(t, "input x[1]", true, true,
+      {STMTxLIST,{INPUTxSTMT,{ARRAYxVAR,"x",
+        {NUMLITxVAL,"1"}}}},
+      "Input statement: array ref")
+    checkParse(t, "input x[(a==b[c[d]])+e[3e7%5]]", true, true,
+      {STMTxLIST,{INPUTxSTMT,{ARRAYxVAR,"x",{{BINxOP,"+"},
+        {{BINxOP,"=="},{SIMPLExVAR,"a"},{ARRAYxVAR,"b",{ARRAYxVAR,
+        "c",{SIMPLExVAR,"d"}}}},{ARRAYxVAR,"e",
+        {{BINxOP,"%"},{NUMLITxVAL,"3e7"},{NUMLITxVAL,"5"}}}}}}},
+      "Input statement, complex array ref")
     checkParse(t, "input", false, true, nil,
       "Bad input statement: no lvalue")
     checkParse(t, "input a b", false, true, nil,
@@ -550,8 +550,8 @@ function test_while_stmt_simple_expr(t)
         {CRxOUT}}}}}}}}}}}}}}}}},
       "While statement: nested")
 
-    --checkParse(t, "while print cr end", false, false, nil,					--commented out tests here
-    --  "Bad while statement: no expr")
+    checkParse(t, "while print cr end", false, false, nil,
+      "Bad while statement: no expr")
     checkParse(t, "while 1 print cr", false, true, nil,
       "Bad while statement: no end")
     checkParse(t, "while 1 print cr else print cr end ",
