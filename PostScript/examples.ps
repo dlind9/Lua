@@ -60,3 +60,22 @@ grestore
 
 
 showpage
+
+0 setgray                               % 100% black
+1 setlinewidth                          % One point thick lines
+72 72 moveto 72 144 lineto stroke       % Draw a one inch line
+
+gsave                                   % Save a copy of the current settings
+  0.5 setgray                           % 50% black
+  10 setlinewidth                       % 10 point wide lines
+  144 72 moveto 144 144 lineto stroke   % Draw a one inch wide line
+  1.03 1.03 scale
+  213 69 box fill                            % Build a square path...
+  0.35 setgray                          %   make it a little darker...
+  %fill                                  %   and fill it.
+grestore                                % Go back to the original settings
+
+3 setlinewidth                          % Make the box lines wider
+300 72 box stroke                       % Draw a black box
+
+showpage
