@@ -1,0 +1,62 @@
+%!
+/inch {72 mul} def
+1 inch 1 inch moveto
+2 inch 1 inch lineto
+2 inch 2 inch lineto
+1 inch 2 inch lineto
+
+stroke
+showpage
+
+/length 72 def
+0 10 360 {              % Go from 0 to 360 degrees in 10 degree steps
+	newpath               % Start a new path
+	gsave                 % Keep rotations temporary
+	216 432 moveto
+	rotate              % Rotate by degrees on stack from 'for'
+	length 0 rlineto
+	/length length 5 add def
+	stroke
+	grestore
+} for
+showpage
+
+/box {
+	newpath
+	moveto
+	72 0 rlineto
+	0 72 rlineto
+	-72 0 rlineto
+	closepath
+} def
+
+/x 0 def
+/y 0 def
+gsave
+gsave                           % Preserve the old coordinates
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+grestore                        % Restore the old coordinates
+	0 72 translate
+gsave
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+grestore
+	0 72 translate
+gsave
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+  72 0 translate
+  0 0 box stroke
+grestore
+grestore
+
+
+showpage
