@@ -27,9 +27,23 @@ collatzCounts = 0:collatzCounts'
 
 
 -- findList
+findList' :: Eq a => [a] -> [a] -> Int -> Maybe Int
+findList' list1 list2 index
+    | head list1 == list2!!index = do
+        if (take (length list1) (drop (index+1) list2)) == list1
+            then Just index
+                else Nothing
+    | head list1 /= list2!!index = findList' list1 list2 (index+1)
+    | otherwise = Nothing    
 findList :: Eq a => [a] -> [a] -> Maybe Int
-findList list1 list2 = do  -- DUMMY; REWRITE THIS!!!
-    | head list1 == list2!!index =
+findList [] list2 = Just 0
+findList list1 list2
+    | head list1 == list2!!0 = do
+        if (take (length list1) (drop 1 list2)) == list1
+            then Just 0
+                else Nothing
+    | head list1 /= list2!!0 = findList' list1 list2 1
+    | otherwise = Nothing
 
 
 -- operator ##
