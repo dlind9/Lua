@@ -1,8 +1,8 @@
 -- PA5.hs  INCOMPLETE
--- Glenn G. Chappell
--- 21 Mar 2018
+-- Daniel Lind
+-- 27 Mar 2018
 --
--- For CS F331 / CSCE A331 Spring 2018
+-- CS F331
 -- Solutions to Assignment 5 Exercise B
 
 module PA5 where
@@ -30,7 +30,7 @@ collatzCounts = 0:collatzCounts'
 findList' :: Eq a => [a] -> [a] -> Int -> Maybe Int
 findList' list1 list2 index
     | head list1 == list2!!index = do
-        if (take (length list1) (drop (index+1) list2)) == list1
+        if (take (length list1) (drop (index) list2)) == list1
             then Just index
                 else Nothing
     | head list1 /= list2!!index = findList' list1 list2 (index+1)
@@ -47,13 +47,31 @@ findList list1 list2
 
 
 -- operator ##
+checkList lhlist rhlist index amt
+   | (length lhlist == (index) || length rhlist == (index)) = amt
+   | (lhlist!!index) == (rhlist!!index) = checkList lhlist rhlist (index+1) (amt+1)
+   | (lhlist!!index /= rhlist!!index) = checkList lhlist rhlist (index+1) (amt)
+   | otherwise = -1
+checkList lhlist rhlist index 1 = checkList lhlist rhlist index 2
 (##) :: Eq a => [a] -> [a] -> Int
-_ ## _ = 42  -- DUMMY; REWRITE THIS!!!
-
+[] ## _ = 0
+lhlist ## rhlist = checkList lhlist rhlist 0 0
 
 -- filterAB
+filterAB' bool_Func [] list2 index = []
+filterAB' bool_Func [] [] index = []
+filterAB' bool_Func list1 [] index = []
+filterAB' bool_Func list1 list2 index
+   | (bool_Func (head list1)) = filterAB' bool_Func (tail list1) (list2) (index+1)
+   | not (bool_Func (head list1)) = filterAB' bool_Func (tail list1) (drop index list2)index
+   
 filterAB :: (a -> Bool) -> [a] -> [b] -> [b]
-filterAB _ _ bs = bs  -- DUMMY; REWRITE THIS!!!
+filterAB bool_Func [] list2 = list2
+filterAB bool_Func [] [] = []
+filterAB bool_Func list1 [] = []
+filterAB bool_Func list1 list2
+   | (bool_Func (head list1)) = filterAB' bool_Func (tail list1) list2 1
+   | not (bool_Func (head list1)) = filterAB bool_Func (tail list1) (tail list2)
 
 
 -- sumEvenOdd
