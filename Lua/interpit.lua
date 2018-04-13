@@ -1,7 +1,6 @@
 -- interpit.lua  INCOMPLETE
--- Glenn G. Chappell
--- 29 Mar 2018
--- Updated 2 Apr 2018
+-- Daniel Lind
+-- 04/12/2018
 --
 -- For CS F331 / CSCE A331 Spring 2018
 -- Interpret AST from parseit.parse
@@ -95,6 +94,16 @@ local function boolToInt(b)
     end
 end
 
+-- checkDefined
+-- given element from state, if nil return 0, otherwise return defined
+local function checkDefined(defined)
+	if defined then
+		return defined
+	else
+		return 0
+	end
+end
+
 
 -- astToStr
 -- Given an AST, produce a string holding the AST in (roughly) Lua form,
@@ -177,9 +186,11 @@ function interpit.interp(ast, state, incall, outcall)
         end
     end
 
+	--could rewrite as just one function and pass in
+	--ast[2] or ast[3] for lhside or rhside
 	function interp_lhside(ast)
 		if ast[2][1] == NUMLIT_VAL then
-			lh_num = strToNum(ast[i][2])
+			lh_num = strToNum(ast[2][2])
 		elseif ast[2][1] == BOOLLIT_VAL then
 			if ast[2][2] == "true" then
 				lh_num = 1
@@ -188,20 +199,24 @@ function interpit.interp(ast, state, incall, outcall)
 			end
 		elseif ast[2][1] == SIMPLE_VAR then
 			key = ast[2][2]
-			lh_num=state.v[key]
+			lh_num=checkDefined(state.v[key])
 		elseif ast[2][1] == ARRAY_VAR then
 			eval = interp_exp(ast[2][3]) --expression ast is in 3rd element of ast
 			key = ast[2][2]
-			lh_num = state.a[key][eval]
-		else
-			lh_num = interp_exp(ast[2][1])
+			if state.a[key] then
+				lh_num = checkDefined(state.a[key][eval])
+			else
+				lh_num = 0
+			end
+		elseif ast[2] then
+			lh_num = interp_exp(ast[2])
 		end
 		return lh_num
 	end
 
 	function interp_rhside(ast)
 		if ast[3][1] == NUMLIT_VAL then
-			rh_num = strToNum(ast[i][2])
+			rh_num = strToNum(ast[3][2])
 		elseif ast[3][1] == BOOLLIT_VAL then
 			if ast[3][2] == "true" then
 				rh_num = 1
@@ -210,13 +225,17 @@ function interpit.interp(ast, state, incall, outcall)
 			end
 		elseif ast[3][1] == SIMPLE_VAR then
 			key = ast[3][2]
-			rh_num=state.v[key]
+			rh_num=checkDefined(state.v[key])
 		elseif ast[3][1] == ARRAY_VAR then
 			eval = interp_exp(ast[3][3]) --expression ast is in 3rd element of ast
 			key = ast[3][2]
-			rh_num = state.a[key][eval]
-		else
-			rh_num = interp_exp(ast[3][1])
+			if state.a[key] then
+				rh_num = checkDefined(state.a[key][eval])
+			else
+				rh_num = 0
+			end
+		elseif ast[3] then
+			rh_num = interp_exp(ast[3])
 		end
 		return rh_num
 	end
@@ -259,36 +278,53 @@ function interpit.interp(ast, state, incall, outcall)
 				return boolToInt(false)
 			end
 		elseif op == "||" then
-			if lhside == 0 and rside == 0 then
+			if lhside == 0 and rhside == 0 then
 				return boolToInt(false)
 			else
 				return boolToInt(true)
 			end
 		else
-			return -9000
+			return -9000		--just pretend this isn't here
 		end
 	end
 
 	function interp_exp(ast)
-		key, eval, saveop, lhside, rhside
-		if ast[1] == NUMLIT_VAL then
+		local key, eval, saveop, lhside, rhside
+		if (ast[1] == NUMLIT_VAL) then
 			return strToNum(ast[2])
 		elseif ast[1] == SIMPLE_VAR then
 			key = ast[2]
-			return state.v[key]
+			return checkDefined(state.v[key])
 		elseif ast[1] == ARRAY_VAR then
 			key = ast[2]
 			eval = interp_exp(ast[3])
-			return state.a[key][eval]
+			if state.a[key] then	--checks to see if the element of key is nil
+				return checkDefined(state.a[key][eval])
+			else
+				return 0
+			end
 		elseif ast[1] == BOOLLIT_VAL then
 			if ast[2] == "true" then
 				return 1
 			else
 				return 0
 			end
+		elseif ast[1] == CALL_FUNC then
+			print(key)
+			key = ast[2]
+			body = state.f[key]
+			if body == nil then
+				body = {STMT_LIST}
+				print("BODY IS NILL")
+			end
+			print(key)
+			interp_stmt_list(body)
+			print(state.v["return"])
+			print(state.v["a"])
+			return checkDefined(state.v["return"])
 		elseif ast[1][1] == UN_OP then
 			saveop = ast[1][2]
-			eval = interp_exp(ast[1][3])
+			eval = interp_exp(ast[2])
 			if saveop == "!" then
 				if eval == 0 then
 					return 1
@@ -329,7 +365,8 @@ function interpit.interp(ast, state, incall, outcall)
                     str = ast[i][2]
                     outcall(str:sub(2,str:len()-1))  -- Remove quotes
                 else
-                    outcall(numToStr(ast[i][1]))
+					eval = interp_exp(ast[i])
+                    outcall(numToStr(eval))
                 end
             end
         elseif ast[1] == FUNC_STMT then
@@ -344,12 +381,54 @@ function interpit.interp(ast, state, incall, outcall)
             end
             interp_stmt_list(body)
         elseif ast[1] == IF_STMT then
-            print("If stmt; DUNNO WHAT TO DO!!!")
+            if interp_exp(ast[2]) ~= 0 then
+				if ast[3][2] then
+					interp_stmt_list(ast[3])
+					--print("OUTCALL")
+				end
+				return
+			end
+			for i = 4, #ast do
+				if ast[4] then		--check for 4th elemnt
+					if ast[i][1] == STMT_LIST then	-- if stmt_list then it is an else
+						if ast[i][2] then
+							interp_stmt_list(ast[i])	--then interp_stmt the current element
+							print("OUTCALL")
+						end
+						return
+					else		--else it's an elseif
+						if interp_exp(ast[i]) ~= 0 then		--if expression in ast is nonzero
+							if ast[i+1][2] then
+								interp_stmt_list(ast[i+1])			--interp_stmt the next elemnt
+								--print("OUTCALL")
+							end
+							return
+						end
+					end
+				else 				--if no 4th element then do nothing
+					return
+				end
+			end
         elseif ast[1] == WHILE_STMT then
-            print("While stmt; DUNNO WHAT TO DO!!!")
+            while interp_exp(ast[2]) ~= 0 do
+					interp_stmt_list(ast[3])
+			end
         else
             assert(ast[1] == ASSN_STMT)
-            print("Assignment stmt; DUNNO WHAT TO DO!!!")
+            key = ast[2][2]
+			assn = interp_exp(ast[3])
+			if ast[2][1] == SIMPLE_VAR then
+				state.v[key] = assn
+			else	--else its an array variable
+				idx = interp_exp(ast[2][3])
+				print(idx)
+				print(key)
+				print(assn)
+				if type(state.a[key]) ~= type({}) then		--checks to see if element is a table
+					state.a[key] = {}						--if not it is set to empty table
+				end
+				state.a[key][idx]=assn
+			end
         end
     end
 
