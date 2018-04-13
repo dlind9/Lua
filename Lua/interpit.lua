@@ -315,13 +315,17 @@ function interpit.interp(ast, state, incall, outcall)
 			body = state.f[key]
 			if body == nil then
 				body = {STMT_LIST}
-				print("BODY IS NILL")
+				print("BODY IS NIL")
 			end
 			print(key)
+			print(astToStr(body))
 			interp_stmt_list(body)
 			print(state.v["return"])
 			print(state.v["a"])
-			return checkDefined(state.v["return"])
+			state.v["return"]=state.v["a"]
+			state.v["a"] = 7
+			print(state.v["return"])
+			return checkDefined(state.v["a"])
 		elseif ast[1][1] == UN_OP then
 			saveop = ast[1][2]
 			eval = interp_exp(ast[2])
@@ -388,19 +392,20 @@ function interpit.interp(ast, state, incall, outcall)
 				end
 				return
 			end
-			for i = 4, #ast do
+			for i=1, #ast do
+				lgth=i
+			end
+			for i = 4, lgth, 2 do
 				if ast[4] then		--check for 4th elemnt
 					if ast[i][1] == STMT_LIST then	-- if stmt_list then it is an else
 						if ast[i][2] then
 							interp_stmt_list(ast[i])	--then interp_stmt the current element
-							print("OUTCALL")
 						end
 						return
 					else		--else it's an elseif
 						if interp_exp(ast[i]) ~= 0 then		--if expression in ast is nonzero
 							if ast[i+1][2] then
 								interp_stmt_list(ast[i+1])			--interp_stmt the next elemnt
-								--print("OUTCALL")
 							end
 							return
 						end
@@ -419,11 +424,10 @@ function interpit.interp(ast, state, incall, outcall)
 			assn = interp_exp(ast[3])
 			if ast[2][1] == SIMPLE_VAR then
 				state.v[key] = assn
+				print("Key in ASSN_STMT is "..key)
+				print("Value assigned is "..assn)
 			else	--else its an array variable
 				idx = interp_exp(ast[2][3])
-				print(idx)
-				print(key)
-				print(assn)
 				if type(state.a[key]) ~= type({}) then		--checks to see if element is a table
 					state.a[key] = {}						--if not it is set to empty table
 				end
